@@ -6,19 +6,14 @@ namespace IMDbApp.View
 {
     public class MovieView
     {
-        public void ShowMovies(IEnumerable<Movie> movies)
+        public void PrintMovies(string header, List<Movie> movies)
         {
-            foreach (var movie in movies.Take(50))
-            {
-                Console.WriteLine($" {movie.Title} ({movie.Year}) - Rating: {movie.Rating}");
-            }
-
-
+            Console.WriteLine($"\n{header}:");
+            foreach (var m in movies)
+                Console.WriteLine($"{m.Title} ({m.Year}) [{m.Genre}] Dir: {m.Director} -> {m.Rating}");
         }
 
-        public void ShowMessage(string message)
-        {
-            Console.WriteLine(message);
-        }
+
+        public void PrintMessage(string message) => Console.WriteLine(message);
     }
 }

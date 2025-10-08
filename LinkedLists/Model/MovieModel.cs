@@ -1,202 +1,80 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
+using Microsoft.VisualBasic.FileIO;
 
 namespace IMDbApp.Model
 {
     public class Movie
     {
-        public int Id { get; set; }
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; }
         public int Year { get; set; }
+        public string Genre { get; set; }
+        public string Director { get; set; }
         public double Rating { get; set; }
     }
 
-    public class SinglyNode
-    {
-        public Movie Data { get; set; }
-        public SinglyNode? Next { get; set; }
-        public SinglyNode(Movie movie) => Data = movie;
-    }
-
-    public class DoublyNode
-    {
-        public Movie Data { get; set; }
-        public DoublyNode? Next { get; set; }
-        public DoublyNode? Prev { get; set; }
-        public DoublyNode(Movie movie) => Data = movie;
-    }
-
-    public class CircularNode
-    {
-        public Movie Data { get; set; }
-        public CircularNode? Next { get; set; }
-        public CircularNode(Movie movie) => Data = movie;
-    }
 
     public class MovieModel
     {
-        private readonly string _datasetPath = @"C:\Users\nivethitha.devaraj\Documents\DSA\LinkedLists\Data\IMDB.csv";
-        private readonly List<Movie> _movies = new();
-
-        // CSV-safe splitter (handles quoted fields with commas)
-        private string[] SplitCsvLine(string line)
+        // -------------------------------
+        // Singly Linked List
+        // -------------------------------
+        private class SinglyNode
         {
-            var parts = new List<string>();
-            if (string.IsNullOrEmpty(line)) return parts.ToArray();
+            public Movie Data;
+            public SinglyNode Next;
+            public SinglyNode(Movie data) { Data = data; }
+        }
+        private SinglyNode headSingly;
 
-            var sb = new StringBuilder();
-            bool inQuotes = false;
-
-            for (int i = 0; i < line.Length; i++)
-            {
-                char c = line[i];
-                if (c == '"')
-                {
-                    inQuotes = !inQuotes;
-                    continue;
-                }
-
-                if (c == ',' && !inQuotes)
-                {
-                    parts.Add(sb.ToString());
-                    sb.Clear();
-                }
-                else
-                {
-                    sb.Append(c);
-                }
-            }
-
-            parts.Add(sb.ToString());
-            return parts.ToArray();
+        public void InsertSingly(Movie movie)
+        {
+            var node = new SinglyNode(movie);
+            if (headSingly == null) { headSingly = node; return; }
+            var current = headSingly;
+            while (current.Next != null) current = current.Next;
+            current.Next = node;
         }
 
-        // Load movies from CSV (robust parsing + debug output)
-        public void LoadMovies(int maxRows = 50)
+        public List<Movie> TraverseSingly()
         {
-            if (!File.Exists(_datasetPath))
-            {
-                Console.WriteLine("Dataset not found: " + _datasetPath);
-                return;
-            }
-
-            var lines = File.ReadAllLines(_datasetPath).Skip(1); // skip header
-            int id = 1;
-
-            foreach (var line in lines.Take(maxRows))
-            {
-                var cols = SplitCsvLine(line);
-
-                // expect at least: Poster_Link, Series_Title, Released_Year, ..., IMDB_Rating at index 6
-                if (cols.Length < 7)
-                {
-                    // print a short debug note for malformed lines
-                    Console.WriteLine("Skipping malformed CSV row (not enough columns).");
-                    continue;
-                }
-
-                // Trim whitespace
-                for (int i = 0; i < cols.Length; i++) cols[i] = cols[i].Trim();
-
-                // Parse fields safely
-                if (!int.TryParse(cols[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out int year))
-                {
-                    // print debug note with title to inspect format
-                    Console.WriteLine($"Skipping row: cannot parse Year for title '{cols[1]}'. Value='{cols[2]}'");
-                    continue;
-                }
-
-                if (!double.TryParse(cols[6], NumberStyles.Any, CultureInfo.InvariantCulture, out double rating))
-                {
-                    Console.WriteLine($"Skipping row: cannot parse Rating for title '{cols[1]}'. Value='{cols[6]}'");
-                    continue;
-                }
-
-                var movie = new Movie
-                {
-                    Id = id++,
-                    Title = cols[1],
-                    Year = year,
-                    Rating = rating
-                };
-
-                _movies.Add(movie);
-            }
-
-            Console.WriteLine($"Loaded {_movies.Count} movie(s) from {_datasetPath}");
-            if (_movies.Count > 0)
-            {
-                Console.WriteLine("Sample loaded movies:");
-                foreach (var m in _movies.Take(Math.Min(5, _movies.Count)))
-                    Console.WriteLine($"  {m.Title} ({m.Year}) - {m.Rating}");
-            }
+            var list = new List<Movie>();
+            var current = headSingly;
+            while (current != null) { list.Add(current.Data); current = current.Next; }
+            return list;
         }
 
-        public IReadOnlyList<Movie> GetMovies() => _movies.AsReadOnly();
-
-        public SinglyNode? BuildSinglyList()
+        public bool UpdateSingly(string title, double newRating)
         {
-            if (_movies.Count == 0) return null;
-
-            var head = new SinglyNode(_movies[0]);
-            var current = head;
-            for (int i = 1; i < _movies.Count; i++)
-            {
-                current.Next = new SinglyNode(_movies[i]);
-                current = current.Next;
-            }
-
-            return head;
-        }
-
-        public DoublyNode? BuildDoublyList()
-        {
-            if (_movies.Count == 0) return null;
-
-            var head = new DoublyNode(_movies[0]);
-            var current = head;
-            for (int i = 1; i < _movies.Count; i++)
-            {
-                var node = new DoublyNode(_movies[i]);
-                current.Next = node;
-                node.Prev = current;
-                current = node;
-            }
-            return head;
-        }
-
-        public CircularNode? BuildCircularList()
-        {
-            if (_movies.Count == 0) return null;
-
-            var head = new CircularNode(_movies[0]);
-            var current = head;
-            for (int i = 1; i < _movies.Count; i++)
-            {
-                current.Next = new CircularNode(_movies[i]);
-                current = current.Next;
-            }
-            current.Next = head;
-            return head;
-        }
-
-        public IEnumerable<Movie> TraverseSingly(SinglyNode? head)
-        {
-            var current = head;
+            var current = headSingly;
             while (current != null)
             {
-                yield return current.Data;
+                if (string.Equals(current.Data.Title, title, StringComparison.OrdinalIgnoreCase))
+                { current.Data.Rating = newRating; return true; }
                 current = current.Next;
             }
+            return false;
         }
 
-        public SinglyNode? ReverseSingly(SinglyNode? head)
+        public bool DeleteSingly(string title)
         {
-            SinglyNode? prev = null, current = head, next = null;
+            if (headSingly == null) return false;
+            if (headSingly.Data.Title.Equals(title, StringComparison.OrdinalIgnoreCase))
+            { headSingly = headSingly.Next; return true; }
+            var current = headSingly;
+            while (current.Next != null)
+            {
+                if (current.Next.Data.Title.Equals(title, StringComparison.OrdinalIgnoreCase))
+                { current.Next = current.Next.Next; return true; }
+                current = current.Next;
+            }
+            return false;
+        }
+
+        public void ReverseSingly()
+        {
+            SinglyNode prev = null, current = headSingly, next = null;
             while (current != null)
             {
                 next = current.Next;
@@ -204,21 +82,143 @@ namespace IMDbApp.Model
                 prev = current;
                 current = next;
             }
-            return prev;
+            headSingly = prev;
         }
 
-        public IEnumerable<Movie> GetTopMovies(int startYear, int endYear, int topN)
+        public void InsertSorted(Movie movie)
         {
-            var filtered = _movies
-                .Where(m => m.Year >= startYear && m.Year <= endYear)
-                .OrderByDescending(m => m.Rating)
-                .Take(topN)
-                .ToList();
-
-            if (!filtered.Any())
-                Console.WriteLine($" No movies found between {startYear} and {endYear}.");
-
-            return filtered;
+            var node = new SinglyNode(movie);
+            if (headSingly == null || movie.Rating > headSingly.Data.Rating)
+            { node.Next = headSingly; headSingly = node; return; }
+            var current = headSingly;
+            while (current.Next != null && current.Next.Data.Rating >= movie.Rating) current = current.Next;
+            node.Next = current.Next;
+            current.Next = node;
         }
+
+        public List<Movie> FindTopRated(int startYear, int endYear)
+        {
+            var result = new List<Movie>();
+            var current = headSingly;
+            while (current != null)
+            {
+                if (current.Data.Year >= startYear && current.Data.Year <= endYear)
+                    result.Add(current.Data);
+                current = current.Next;
+            }
+            result.Sort((a, b) => b.Rating.CompareTo(a.Rating));
+            return result.Count > 5 ? result.GetRange(0, 5) : result;
+        }
+
+        // -------------------------------
+        // Doubly Linked List
+        // -------------------------------
+        private class DoublyNode
+        {
+            public Movie Data;
+            public DoublyNode Next;
+            public DoublyNode Prev;
+            public DoublyNode(Movie data) { Data = data; }
+        }
+        private DoublyNode headDoubly;
+        private DoublyNode tailDoubly;
+
+        public void InsertDoubly(Movie movie)
+        {
+            var node = new DoublyNode(movie);
+            if (headDoubly == null) { headDoubly = tailDoubly = node; return; }
+            tailDoubly.Next = node; node.Prev = tailDoubly; tailDoubly = node;
+        }
+
+        public List<Movie> TraverseDoublyForward()
+        {
+            var list = new List<Movie>();
+            var current = headDoubly;
+            while (current != null) { list.Add(current.Data); current = current.Next; }
+            return list;
+        }
+
+        public List<Movie> TraverseDoublyReverse()
+        {
+            var list = new List<Movie>();
+            var current = tailDoubly;
+            while (current != null) { list.Add(current.Data); current = current.Prev; }
+            return list;
+        }
+
+        // -------------------------------
+        // Circular Linked List
+        // -------------------------------
+        private class CircularNode
+        {
+            public Movie Data;
+            public CircularNode Next;
+            public CircularNode(Movie data) { Data = data; }
+        }
+        private CircularNode headCircular;
+        private CircularNode tailCircular;
+
+        public void InsertCircular(Movie movie)
+        {
+            var node = new CircularNode(movie);
+            if (headCircular == null) { headCircular = tailCircular = node; node.Next = node; return; }
+            node.Next = headCircular; tailCircular.Next = node; tailCircular = node;
+        }
+
+        public List<Movie> TraverseCircular(int limit = 10)
+        {
+            var list = new List<Movie>();
+            if (headCircular == null) return list;
+            var current = headCircular; int count = 0;
+            do { list.Add(current.Data); current = current.Next; count++; }
+            while (current != headCircular && count < limit);
+            return list;
+        }
+
+        // -------------------------------
+        // Load movies from CSV
+        // -------------------------------
+
+public List<Movie> LoadMovies(string filePath, int maxRows = 20)
+    {
+        var list = new List<Movie>();
+
+        using (TextFieldParser parser = new TextFieldParser(filePath))
+        {
+            parser.SetDelimiters(new string[] { "," });
+            parser.HasFieldsEnclosedInQuotes = true;
+
+            // skip header
+            parser.ReadLine();
+
+            int count = 0;
+            while (!parser.EndOfData && count < maxRows)
+            {
+                var parts = parser.ReadFields();
+                if (parts.Length < 10) continue;
+
+                string title = parts[1].Trim(); // Series_Title
+                int year = int.TryParse(parts[2].Trim(), out var y) ? y : 0;
+                string genre = parts[5].Trim();
+                double rating = double.TryParse(parts[6].Trim(), out var r) ? r : 0.0;
+                string director = parts[9].Trim();
+
+                list.Add(new Movie
+                {
+                    Title = title,
+                    Year = year,
+                    Genre = genre,
+                    Rating = rating,
+                    Director = director
+                });
+
+                count++;
+            }
+        }
+
+        return list;
     }
+
+
+}
 }

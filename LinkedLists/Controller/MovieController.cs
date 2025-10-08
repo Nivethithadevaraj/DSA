@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 using IMDbApp.Model;
 using IMDbApp.View;
 
@@ -6,44 +6,39 @@ namespace IMDbApp.Controller
 {
     public class MovieController
     {
-        private readonly MovieModel _model;
-        private readonly MovieView _view;
+        private readonly MovieModel model;
+        private readonly MovieView view;
 
         public MovieController()
         {
-            _model = new MovieModel();
-            _view = new MovieView();
+            model = new MovieModel();
+            view = new MovieView();
         }
 
         public void Run()
         {
-            _model.LoadMovies(50); // load first 50 rows for demo
+            string filePath = @"C:\Users\nivethitha.devaraj\Documents\DSA\LinkedLists\Data\IMDB.csv";
+            var movies = model.LoadMovies(filePath, 15);
 
-            var all = _model.GetMovies();
-            _view.ShowMessage($"Total movies loaded: {all.Count}");
+            foreach (var m in movies) { model.InsertSingly(m); model.InsertDoubly(m); model.InsertCircular(m); }
 
-            if (all.Count == 0)
-            {
-                _view.ShowMessage("No movies loaded; check dataset path and CSV format.");
-                return;
-            }
+            view.PrintMovies("Singly Traversal", model.TraverseSingly());
+            model.UpdateSingly(movies[0].Title, 9.9);
+            view.PrintMovies("After Update", model.TraverseSingly());
+            model.DeleteSingly(movies[1].Title);
+            view.PrintMovies("After Delete", model.TraverseSingly());
+            model.ReverseSingly();
+            view.PrintMovies("After Reverse", model.TraverseSingly());
 
-            var singly = _model.BuildSinglyList();
-            if (singly == null)
-            {
-                _view.ShowMessage("Singly linked list is null.");
-            }
-            else
-            {
-                var movies = _model.TraverseSingly(singly);
-                _view.ShowMessage("\nAll Movies (from singly linked list):");
-                _view.ShowMovies(movies.Take(50));
-            }
+            view.PrintMovies("Doubly Forward", model.TraverseDoublyForward());
+            view.PrintMovies("Doubly Reverse", model.TraverseDoublyReverse());
+            view.PrintMovies("Circular (sample)", model.TraverseCircular(8));
 
-            _view.ShowMessage("\nTop Rated Movies (2000-2010):");
-            var top = _model.GetTopMovies(2000, 2010, 5);
-            _view.ShowMovies(top);
+            view.PrintMovies("Top Rated (2000-2010)", model.FindTopRated(2000, 2010));
+
+            var sortedModel = new MovieModel();
+            foreach (var m in movies) sortedModel.InsertSorted(m);
+            view.PrintMovies("Sorted by Rating", sortedModel.TraverseSingly());
         }
-
     }
 }
